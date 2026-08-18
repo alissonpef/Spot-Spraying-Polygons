@@ -1,56 +1,90 @@
-# Spot Spraying Polygons
+<a id="readme-top"></a>
 
-> Automatic generation of georeferenced spraying polygons for localized weed management in precision agriculture.
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
-This tool acts as a **Tactical Profile Translator**, bridging the gap between raw computer vision detections and operational UAV path execution. It converts amorphous, georeferenced weed detection maps, field boundaries, and optional obstacle layers into mathematically robust GeoJSON prescription maps. It implements nine coverage algorithms, a spraying-line generator, a full metric suite, and an interactive Streamlit interface, supporting both a command-line pipeline and a visual inspection workflow.
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/alissonpef/spot_spraying_polygons">
+    <img src="assets/logo.png" alt="Logo" width="120" height="120">
+  </a>
 
----
+  <h3 align="center">Spot Spraying Polygons</h3>
 
-## Table of Contents
+  <p align="center">
+    Automatic generation of georeferenced spraying polygons for localized weed management in precision agriculture.
+    <br />
+    <a href="https://github.com/alissonpef/spot_spraying_polygons"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/alissonpef/spot_spraying_polygons/issues/new?labels=bug">Report Bug</a>
+    &middot;
+    <a href="https://github.com/alissonpef/spot_spraying_polygons/issues/new?labels=enhancement">Request Feature</a>
+  </p>
+</div>
 
-- [Spot Spraying Polygons](#spot-spraying-polygons)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [System Architecture](#system-architecture)
-  - [Coverage Algorithms](#coverage-algorithms)
-  - [Algorithmic Foundations (MRR)](#algorithmic-foundations-mrr)
-    - [1. Bounding Box \& The Dominant Void Criterion](#1-bounding-box--the-dominant-void-criterion)
-    - [2. Formal Algorithm \& Pseudocode](#2-formal-algorithm--pseudocode)
-    - [3. Computational Complexity (Big-O Analysis)](#3-computational-complexity-big-o-analysis)
-  - [Metric Suite](#metric-suite)
-    - [Geometric Metrics (`geometric-metrics`)](#geometric-metrics-geometric-metrics)
-    - [IoU Analysis (`iou-analysis`)](#iou-analysis-iou-analysis)
-    - [MRR Sensitivity Analysis (`sensitivity-analysis`)](#mrr-sensitivity-analysis-sensitivity-analysis)
-    - [Likert Statistical Analysis (`likert-stats`)](#likert-statistical-analysis-likert-stats)
-  - [Technologies](#technologies)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-  - [Usage](#usage)
-    - [CLI — Polygon Generation](#cli--polygon-generation)
-    - [CLI — Spraying Lines](#cli--spraying-lines)
-    - [CLI — Batch Pipeline](#cli--batch-pipeline)
-    - [CLI — Metrics](#cli--metrics)
-    - [Interactive UI](#interactive-ui)
-  - [Configuration](#configuration)
-  - [Limitations and Future Work](#limitations-and-future-work)
-  - [Project Structure](#project-structure)
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#system-architecture">System Architecture</a></li>
+    <li><a href="#coverage-algorithms">Coverage Algorithms</a></li>
+    <li>
+      <a href="#algorithmic-foundations-mrr">Algorithmic Foundations (MRR)</a>
+      <ul>
+        <li><a href="#1-bounding-box--the-dominant-void-criterion">Bounding Box & The Dominant Void Criterion</a></li>
+        <li><a href="#2-formal-algorithm--pseudocode">Formal Algorithm & Pseudocode</a></li>
+        <li><a href="#3-computational-complexity-big-o-analysis">Computational Complexity</a></li>
+      </ul>
+    </li>
+    <li><a href="#metric-suite">Metric Suite</a></li>
+    <li><a href="#technologies">Technologies</a></li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#interactive-dashboard-streamlit">Interactive Dashboard</a></li>
+        <li><a href="#command-line-interface-cli">Command-Line Interface</a></li>
+      </ul>
+    </li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#limitations-and-future-work">Limitations and Future Work</a></li>
+    <li><a href="#project-structure">Project Structure</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
 
----
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-## Overview
+**Spot Spraying Polygons** is a tool designed to solve a crucial problem in modern agriculture: chemical product waste. Indiscriminate broadcast spraying generates financial loss and environmental damage. This tool acts as a **Tactical Profile Translator**, bridging the gap between raw computer vision detections and operational UAV path execution. It converts amorphous, georeferenced weed detection datasets into mathematically robust GeoJSON prescription maps, minimizing the treated area.
 
 The core pipeline:
-
 1. **Projection** — Reprojects all input geometries from WGS84 into a metric CRS (UTM, automatically selected from the centroid of the field).
-2. **Clipping** — Clips weed detections to the field boundary and optionally removes obstacle areas (with a configurable safety buffer).
-3. **Buffering** — Expands each weed detection by a user-defined buffer, approximated as a polygon with a configurable number of sides.
-4. **Clustering** — Groups nearby buffered detections into contiguous patches using spatial proximity merging.
-5. **Coverage** — Applies one of nine strategies to produce minimal-area spraying polygons for each patch.
+2. **Clipping / Obstacle Avoidance** — Clips weed detections to the field boundary and optionally removes obstacle areas (with a configurable safety buffer).
+3. **Buffering** — Expands each weed detection by a user-defined safety margin, approximated as a polygon with a configurable number of sides.
+4. **Clustering** — Groups nearby buffered detections into contiguous patches using spatial proximity merging to form coherent treatment patches.
+5. **Coverage** — Applies one of nine smart geometric strategies to produce minimal-area spraying polygons for each patch.
 6. **Geometry repair** — Validates and optionally repairs invalid geometries at each stage using Shapely's `make_valid`.
-7. **Export** — Reprojects the final polygons back to WGS84 and writes a GeoJSON `FeatureCollection`.
+7. **Line Routing & Metrics** — Generates zigzag spraying lines using shortest-path algorithms (Dijkstra) to connect passes, and provides a full efficiency report (IoU, turns, overspray waste).
+8. **Export** — Reprojects the final polygons back to WGS84 and writes a GeoJSON `FeatureCollection`, compatible with agricultural drones and sprayer controllers.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## System Architecture
 
@@ -91,7 +125,7 @@ src/
     theme.py           ← Global CSS and sidebar styling
 ```
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Coverage Algorithms
 
@@ -116,7 +150,7 @@ All methods support:
 - optional **negative buffer** to shrink the final polygon inward;
 - automatic **geometry repair** at every intermediate stage.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Algorithmic Foundations (MRR)
 
@@ -189,7 +223,7 @@ Therefore, the worst-case time complexity for a cluster of $n$ points is bounded
 
 This guarantees that the decomposition remains computationally tractable even for dense agricultural fields. By limiting the recursion depth and parameterizing the fill ratio, the algorithm provides a bounded, efficient, and mathematically sound bridge between raw visual detections and executable UAV trajectories, shifting the focus from ad-hoc systems post-processing to rigorous computational geometry.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Metric Suite
 
@@ -216,7 +250,7 @@ Compares all generated methods side-by-side using spray-line data:
 - Processes qualitative evaluation data (Agronomist, Agronomic Coverage, Spraying Excess, Drone Operability, General Acceptability)
 - Runs non-parametric statistical tests and exports formatted tables
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Technologies
 
@@ -231,170 +265,109 @@ Compares all generated methods side-by-side using spray-line data:
 
 Core dependencies are declared in [`pyproject.toml`](pyproject.toml). The package is built with [Hatchling](https://hatch.pypa.io/latest/) and managed with [uv](https://docs.astral.sh/uv/).
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Getting Started
 
+To get a local copy up and running, follow these simple steps.
+
 ### Prerequisites
 
-- Python 3.11 or later
-- [`uv`](https://docs.astral.sh/uv/) (recommended) **or** `pip`
+This project requires Python 3.11 or later. We highly recommend using the **uv** package manager for an extremely fast and isolated installation.
+
+- Install **uv** (if you don't have it yet):
+  ```sh
+  pip install uv
+  ```
 
 ### Installation
 
-```sh
-# Clone and enter the repository
-cd Spot-Spraying-Polygons
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/alissonpef/spot_spraying_polygons.git
+   cd spot_spraying_polygons
+   ```
+2. Install dependencies and create a virtual environment with **uv**:
+   ```sh
+   uv sync
+   ```
+3. Activate the virtual environment:
+   - **Linux/macOS**:
+     ```sh
+     source .venv/bin/activate
+     ```
+   - **Windows**:
+     ```sh
+     .venv\Scripts\activate
+     ```
 
-# Create a virtual environment and install all dependencies
-uv sync
-
-# Activate the environment (Linux/macOS)
-source .venv/bin/activate
-```
-
-<details>
-<summary>Alternative: plain pip</summary>
-
-```sh
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-</details>
-
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Usage
 
-### CLI — Polygon Generation
+The project supports both visual execution and terminal execution.
 
-After installation, the `spot-spray` command is available:
+### Interactive Dashboard (Streamlit)
 
+To launch the web visualization interface in your browser:
 ```sh
-spot-spray --help
-```
-
-**Minimal example** (MRR, three weed files, one field):
-
-```sh
-spot-spray \
-  --weeds data/input/weed1.geojson data/input/weed2.geojson data/input/weed3.geojson \
-  --fields data/input/fields.geojson \
-  --output data/output/spraying-mrr.geojson \
-  --coverage_method mrr
-```
-
-**With obstacles and custom parameters:**
-
-```sh
-spot-spray \
-  --weeds data/input/weed1.geojson \
-  --fields data/input/fields.geojson \
-  --obstacles data/input/obstacles.geojson \
-  --output data/output/spraying-bcd.geojson \
-  --coverage_method bcd \
-  --weed_buffer_m 1.5 \
-  --merge_distance_m 8.0 \
-  --obstacle_safety_buffer_m 3.0 \
-  --min_polygon_area_m2 500
-```
-
-**Available `--coverage_method` values:**
-
-| Value | Algorithm |
-|-------|-----------|
-| `mrr` | Minimum Rotated Rectangle |
-| `bcd` | Boustrophedon Cellular Decomposition |
-| `fixed-grid` | Fixed Grid |
-| `quadtree` | Quadtree |
-| `strip-based` | Strip-Based |
-| `convex-hull` | Convex Hull |
-| `concave-hull` | Concave Hull (Alpha Shape) |
-| `aabb` | Axis-Aligned Bounding Box |
-| `morph-closing` | Morphological Closing |
-
-A JSON configuration file can be passed via `--config <path>` as an alternative to individual flags (CLI flags always override file values).
-
----
-
-### CLI — Spraying Lines
-
-Generates boustrophedon (zigzag) flight lines from a polygon GeoJSON. Connector segments between passes are computed via a shortest-path algorithm that stays inside the polygon boundary.
-
-```sh
-# Single file
-spraying-lines <polygon.geojson> <distance_m> <angle_deg> --output-dir data/output/lines
-
-# Batch — processes every .geojson in a directory
-spraying-lines-batch data/output/polygons 2.0 0.0 --output-dir data/output/lines --recursive
-```
-
-Parameters:
-- `distance_m` — spacing between parallel passes (metres)
-- `angle_deg` — heading angle of the passes (0 = horizontal, 0–360)
-
----
-
-### CLI — Batch Pipeline
-
-The `dev` shortcut regenerates all nine methods with default parameters:
-
-```sh
-dev
-```
-
-The `process-method` command runs a single method with explicit parameters:
-
-```sh
-process-method mrr 1.0 5.0 3.0 --negative-buffer-m 0.3
-```
-
-Positional arguments: `coverage_method`, `weed_buffer_m`, `merge_distance_m`, `obstacle_safety_buffer_m`.
-
----
-
-### CLI — Metrics
-
-Run all metric modules in sequence:
-
-```sh
-metrics
-```
-
-Or run individual modules:
-
-```sh
-geometric-metrics --polygons-dir data/output/polygons --output-lines-dir data/output/lines
-iou-analysis
-sensitivity-analysis
-likert-stats
-```
-
-All modules export results to `data/output/metrics/` as CSV and Markdown files.
-
----
-
-### Interactive UI
-
-```sh
-ui
+uv run ui
 # or directly:
-streamlit run src/ui/app.py
+uv run streamlit run src/ui/app.py
 ```
 
 The Streamlit interface provides:
-
-- **File inputs** — upload or use sample weed, field, and obstacle GeoJSON files; obstacles can also be embedded in the fields file via an `obstacle` property.
+- **File inputs** — upload or use sample weed, field, and obstacle GeoJSON files.
 - **Algorithm selector** — dropdown with all nine methods and per-method descriptions.
-- **Parameter panel** — sliders and number inputs for weed buffer, clustering distance, obstacle safety distance, minimum polygon area, fill ratio, recursion depth, buffer smoothness (max sides), and negative buffer.
-- **Method-specific controls** — additional parameters appear automatically for Fixed Grid (cell size, fill threshold), Quadtree (minimum cell size, fill threshold), Concave Hull (alpha radius), and Strip-Based (strip width, fill threshold).
-- **Interactive map** — Folium map with colour-coded fields, weed overlays, obstacle outlines, and generated spraying polygons; map size is adjustable.
+- **Parameter panel** — sliders and number inputs for all algorithmic variables.
+- **Interactive map** — Folium map with colour-coded geometries and generated spraying polygons.
 - **Edit panel** — individual spraying polygons or weed detections can be removed interactively before download.
-- **Dashboard** — per-field summary (polygon count, total area, mean area); overall totals.
 - **GeoJSON export** — one-click download of the filtered result.
 
----
+### Command-Line Interface (CLI)
+
+After installation, the CLI commands are available. You can prefix them with `uv run` if the virtual environment is not activated.
+
+1. **Polygon Generation (`spot-spray`)**:
+   ```sh
+   spot-spray \
+     --weeds data/input/weed1.geojson data/input/weed2.geojson \
+     --fields data/input/fields.geojson \
+     --obstacles data/input/obstacles.geojson \
+     --output data/output/spraying-mrr.geojson \
+     --coverage_method mrr \
+     --weed_buffer_m 1.5 \
+     --merge_distance_m 8.0 \
+     --obstacle_safety_buffer_m 3.0 \
+     --min_polygon_area_m2 500
+   ```
+
+2. **Spraying Line Generation (`spraying-lines`)**:
+   Generates boustrophedon (zigzag) flight lines from a polygon GeoJSON.
+   ```sh
+   # Single file
+   spraying-lines <polygon.geojson> <distance_m> <angle_deg> --output-dir data/output/lines
+   
+   # Batch — processes every .geojson in a directory
+   spraying-lines-batch data/output/polygons 2.0 0.0 --output-dir data/output/lines --recursive
+   ```
+
+3. **Batch Pipeline (`dev` / `process-method`)**:
+   ```sh
+   # Regenerates all nine methods with default parameters
+   dev
+
+   # Runs a single method with explicit parameters
+   process-method mrr 1.0 5.0 3.0 --negative-buffer-m 0.3
+   ```
+
+4. **Metrics (`metrics`)**:
+   ```sh
+   # Run all metric modules in sequence
+   metrics
+   ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Configuration
 
@@ -421,7 +394,7 @@ All algorithm parameters are validated at construction time. Default values:
 | `working_crs` | `None` | Override for the projected CRS (auto-selected from UTM otherwise) |
 | `fix_invalid_geometries` | `True` | Apply `make_valid` whenever an invalid geometry is detected |
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Limitations and Future Work
 
@@ -429,11 +402,11 @@ While the geometric and kinematic proxies used in our evaluation (e.g., turns pe
 - **Real-world UAV Flight Experiments:** Validating the generated polygons through physical drone flights to measure exact battery consumption, actual flight time, and control smoothness.
 - **Advanced Trajectory Optimization:** Integrating physical drone dynamics directly into the polygon generation constraints.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Project Structure
 
-```
+```text
 Spot-Spraying-Polygons/
 ├── data/
 │   ├── input/          ← Sample weed, field, and obstacle GeoJSON files
@@ -456,18 +429,56 @@ Spot-Spraying-Polygons/
 └── pyproject.toml
 ```
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+If you have a suggestion that would make this better, please fork the repository and create a pull request. You can also simply open an issue with the tag "enhancement".
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Top Contributors:
+
+<a href="https://github.com/alissonpef/spot_spraying_polygons/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=alissonpef/spot_spraying_polygons" alt="contrib.rocks image" />
+</a>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Contact
+
+Alisson Pereira Ferreira - alissonpef@gmail.com - [LinkedIn](https://www.linkedin.com/in/alisson-pereira-ferreira/)
+
+Project Link: [https://github.com/alissonpef/spot_spraying_polygons](https://github.com/alissonpef/spot_spraying_polygons)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ---
 
-<p align="right">(<a href="#spot-spraying-polygons">back to top</a>)</p>
+Made with ❤️ by **Alisson Pereira**.
 
-<!-- MARKDOWN LINKS -->
-[python-shield]: https://img.shields.io/badge/Python_3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white
-[python-url]: https://www.python.org/
-[shapely-shield]: https://img.shields.io/badge/Shapely-2E8B57?style=for-the-badge
-[shapely-url]: https://shapely.readthedocs.io/
-[pyproj-shield]: https://img.shields.io/badge/PyProj-1F6FEB?style=for-the-badge
-[pyproj-url]: https://pyproj4.github.io/pyproj/stable/
-[streamlit-shield]: https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white
-[streamlit-url]: https://streamlit.io/
-[folium-shield]: https://img.shields.io/badge/Folium-77B829?style=for-the-badge
-[folium-url]: https://python-visualization.github.io/folium/
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/alissonpef/spot_spraying_polygons.svg?style=for-the-badge
+[contributors-url]: https://github.com/alissonpef/spot_spraying_polygons/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/alissonpef/spot_spraying_polygons.svg?style=for-the-badge
+[forks-url]: https://github.com/alissonpef/spot_spraying_polygons/network/members
+[stars-shield]: https://img.shields.io/github/stars/alissonpef/spot_spraying_polygons.svg?style=for-the-badge
+[stars-url]: https://github.com/alissonpef/spot_spraying_polygons/stargazers
+[issues-shield]: https://img.shields.io/github/issues/alissonpef/spot_spraying_polygons.svg?style=for-the-badge
+[issues-url]: https://github.com/alissonpef/spot_spraying_polygons/issues
+[license-shield]: https://img.shields.io/github/license/alissonpef/spot_spraying_polygons.svg?style=for-the-badge
+[license-url]: https://github.com/alissonpef/spot_spraying_polygons/blob/main/LICENSE
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/alisson-pereira-ferreira/
